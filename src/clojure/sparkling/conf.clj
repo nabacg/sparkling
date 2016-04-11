@@ -22,6 +22,10 @@
   [conf name]
   (.setAppName conf name))
 
+(defn spark-ui-enabled
+  [conf enabled]
+  (.set conf "spark.ui.enabled" enabled))
+
 (defn jars
   [conf jars]
   (.setJars conf (into-array String jars)))

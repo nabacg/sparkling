@@ -8,6 +8,7 @@
 
 (defn spark-conf-local []
   (-> (conf/spark-conf)
+      (conf/spark-ui-enabled "false")
       (conf/master "local")
       (conf/app-name "sparkling")))
 
