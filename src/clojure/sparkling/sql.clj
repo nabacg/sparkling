@@ -11,7 +11,9 @@
   (.sql sql-context query))
 
 (defn read-json [sql-context path]
-  (-> (.jsonFile sql-context path)))
+  (-> sql-context
+      (.read)
+      (.json path)))
 
 (defn register-temp-table [df name]
   (.registerTempTable df name))
