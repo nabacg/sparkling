@@ -1,5 +1,6 @@
 (ns sparkling.sql-test
-  (:import [org.apache.spark.sql SQLContext DataFrame])
+  (:import [org.apache.spark.sql SQLContext DataFrame]
+           [org.apache.spark.sql.catalyst.plans.logical.Project])
   (:use clojure.test)
   (:require [sparkling.conf :as conf]
             [sparkling.api :as api]
@@ -23,15 +24,31 @@
 (deftest read-json
   (let [conf (spark-conf-local)]
     (api/with-context sc conf
-      (let [sql-context (sql/sql-context sc)]
+      (let [sql-context (sql/sql-context sc)
+            df (sql/read-json sql-context sample-json)]
         (testing "read-json loads DataFrame"
-          (= (class (sql/read-json sql-context sample-json)) DataFrame))))))
+          (= (class df) DataFrame)
+          (= (.count df) 3))))))
 
 (deftest sql
   (let [conf (spark-conf-local)]
     (api/with-context sc conf
       (let [sql-context (sql/sql-context sc)
-            df (sql/read-json sql-context sample-json)]
-        (sql/register-temp-table df "test")
-        (testing "gives SqlContext"
-          (is (= (class (sql/sql sql-context "select * from test")) DataFrame)))))))
+            df (sql/read-json sql-context sample-json)
+            _ (sql/register-temp-table df "people")
+            sql-df (sql/sql sql-context "select * from people where age > 20")]
+        (testing "Can execute SQL queries against DataFrame"
+          (is (= (class sql-df) DataFrame))
+          (= (.count sql-df) 10))))))
+
+(deftest columns
+  (api/with-context sc (spark-conf-local)
+    (let [df (sql/read-json (sql/sql-context sc) sample-json)]
+      (testing "should return clojure vector with all column names"
+        (= (sql/columns df) ["name" "age"])))))
+
+(deftest select
+  (api/with-context sc (spark-conf-local)
+    (let [df (sql/read-json (sql/sql-context sc) sample-json)]
+      (testing "select returns dataframe with only columns provided in select call"
+        (= (sql/columns (sql/select df "name")) ["name"])))))
