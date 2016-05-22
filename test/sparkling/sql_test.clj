@@ -12,7 +12,7 @@
       (conf/spark-ui-enabled "false")
       (conf/master "local")
       (conf/app-name "sparkling")))
-
+;todo rewrite tests with something like with/test-df
 (def sample-json "resources/people.json")
 
 (deftest sql-context
@@ -28,7 +28,7 @@
             df (sql/read-json sql-context sample-json)]
         (testing "read-json loads DataFrame"
           (= (class df) DataFrame)
-          (= (.count df) 3))))))
+          (= (sql/count df) 3))))))
 
 (deftest sql
   (let [conf (spark-conf-local)]
@@ -52,3 +52,20 @@
     (let [df (sql/read-json (sql/sql-context sc) sample-json)]
       (testing "select returns dataframe with only columns provided in select call"
         (= (sql/columns (sql/select df "name")) ["name"])))))
+
+(deftest filter
+  (api/with-context sc (spark-conf-local)
+    (let [df (sql/read-json (sql/sql-context sc) sample-json)]
+      (testing "applies filter expression to DF"
+        (= (-> (sql/filter df "age" > 19) sql/count) 1)
+        (= (-> (sql/filter df "age" >= 19) sql/count) 2)
+        (= (-> (sql/filter df "age" < 30) sql/count) 1)
+        (= (-> (sql/filter df "age" <= 19) sql/count) 2)))))
+
+(deftest group-by
+  (api/with-context sc (spark-conf-local)
+    (let [df (sql/read-json (sql/sql-context sc) sample-json)
+          grouped (-> (sql/group-by df "age") sql/count)]
+      (testing "select returns dataframe with only columns provided in select call"
+        (= (-> grouped sql/columns) ["age" "count"])
+        (= (-> grouped (.count)) 3)))))

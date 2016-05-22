@@ -59,7 +59,7 @@
        (.columns)
        (into [])))
 
-(defn group-by-cols [df & column-names]
+(defn group-by [df & column-names]
   (->> (to-df-columns df column-names)
        (.groupBy df)))
 
@@ -73,6 +73,25 @@
     (= op <=) (.$less$eq df-col arg)
     (= op <) (.$less df-col arg)))
 
+(defn count [df]
+  (.count df))
+
 (defn filter [df col operator operand]
-  (.filter df (-> (df-column df col)
-                  (apply-operator operator operand))))
+   (.filter df (-> (df-column df col)
+                   (apply-operator operator operand))))
+
+(quote
+                                        ;unfortunately this fails at cannot resolve symbol $greater...
+                                        ;import those $greater.. symbols from scala ?
+ ;or macro?
+ (defn to-scala-operator [op]
+   (cond
+     (= op >) $greater
+     (= op >=) $greater$eq
+     (= op <=) $less$eq
+     (= op <) $less))
+
+
+ (defn filter [df col operator operand]
+   (.filter df (-> (df-column df col)
+                   (. (to-scala-operator operator) operand)))))
