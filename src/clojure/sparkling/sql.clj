@@ -23,13 +23,19 @@
 
                                         ;scala operator method names lookup http://www.codecommit.com/blog/java/interop-between-java-and-scala
                                         ;calling vararg Scala methods http://stackoverflow.com/questions/10060377/how-to-use-scala-varargs-from-java-code
+(defn to-scala-varargs [project-fn xs]
+  (let [varargs (new scala.collection.mutable.ArrayBuffer)]
+         (doseq [x xs]
+          (.$plus$eq varargs (project-fn x)))
+         varargs))
 
-(defn select [df & columnNames]
-  (->> (let [varargs (new scala.collection.mutable.ArrayBuffer)]
-         (doseq [colName columnNames]
-          (.$plus$eq varargs (.apply df colName)))
-        varargs)
-      (.select df)))
+(defn to-df-columns [df column-names]
+  (to-scala-varargs #(.apply df %) column-names))
+
+
+(defn select [df & col-names]
+  (->> (to-df-columns df col-names)
+       (.select df)))
 
 
 (defn sql-context [spark-context]
@@ -52,3 +58,21 @@
   (->> df
        (.columns)
        (into [])))
+
+(defn group-by-cols [df & column-names]
+  (->> (to-df-columns df column-names)
+       (.groupBy df)))
+
+(defn df-column [df column-name]
+  (.apply df column-name))
+
+(defn apply-operator [df-col op arg]
+  (cond
+    (= op >) (.$greater df-col arg)
+    (= op >=) (.$greater$eq df-col arg)
+    (= op <=) (.$less$eq df-col arg)
+    (= op <) (.$less df-col arg)))
+
+(defn filter [df col operator operand]
+  (.filter df (-> (df-column df col)
+                  (apply-operator operator operand))))
