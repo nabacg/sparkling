@@ -53,6 +53,16 @@
 (defn register-temp-table [df name]
   (.registerTempTable df name))
 
+(defn print-schema [df]
+  (-> df
+      (.schema)
+      (.treeString)
+      println))
+
+(defn show [df]
+  (-> df
+      (.showString 20 true)
+      println))
 
 (defn columns [df]
   (->> df
