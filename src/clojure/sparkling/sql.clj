@@ -76,6 +76,30 @@
 (defn df-column [df column-name]
   (.apply df column-name))
 
+(defn count [df]
+  (.count df))
+
+(defn to-scala-operator [op]
+   (cond
+     (= op =) #(.$eq$eq$eq % %2)
+     (= op not=) #(.$bang$eq$eq % %2)
+     (= op +) #(.$plus % %2)
+     (= op -) #(.$minus % %2)
+     (= op *) #(.$times % %2)
+     (= op /) #(.$div % %2)
+     (= op >) #(.$greater % %2)
+     (= op >=) #(.$greater$eq % %2)
+     (= op <=) #(.$less$eq % %2)
+     (= op <) #(.$less % %2)))
+
+(defn filter [df col operator operand]
+   (.filter df (-> (df-column df col)
+                   ((to-scala-operator operator) operand))))
+(quote
+                                        ;unfortunately this fails at cannot resolve symbol $greater...
+                                        ;import those $greater.. symbols from scala ?
+ ;or macro?
+
 (defn apply-operator [df-col op arg]
   ;todo go through Spark's Column.scala and find all operators
   (cond
@@ -90,25 +114,8 @@
     (= op <=) (.$less$eq df-col arg)
     (= op <) (.$less df-col arg)))
 
-(defn count [df]
-  (.count df))
-
 (defn filter [df col operator operand]
    (.filter df (-> (df-column df col)
                    (apply-operator operator operand))))
 
-(quote
-                                        ;unfortunately this fails at cannot resolve symbol $greater...
-                                        ;import those $greater.. symbols from scala ?
- ;or macro?
- (defn to-scala-operator [op]
-   (cond
-     (= op >) $greater
-     (= op >=) $greater$eq
-     (= op <=) $less$eq
-     (= op <) $less))
-
-
- (defn filter [df col operator operand]
-   (.filter df (-> (df-column df col)
-                   (. (to-scala-operator operator) operand)))))
+ )
