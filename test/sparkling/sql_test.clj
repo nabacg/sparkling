@@ -57,6 +57,8 @@
   (api/with-context sc (spark-conf-local)
     (let [df (sql/read-json (sql/sql-context sc) sample-json)]
       (testing "applies filter expression to DF"
+        (= (-> (sql/filter df "age" = 19) sql/count) 1)
+        (= (-> (sql/filter df "age" not= 19) sql/count) 2)
         (= (-> (sql/filter df "age" > 19) sql/count) 1)
         (= (-> (sql/filter df "age" >= 19) sql/count) 2)
         (= (-> (sql/filter df "age" < 30) sql/count) 1)
