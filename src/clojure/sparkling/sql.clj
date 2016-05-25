@@ -77,7 +77,14 @@
   (.apply df column-name))
 
 (defn apply-operator [df-col op arg]
+  ;todo go through Spark's Column.scala and find all operators
   (cond
+    (= op ==) (.eq$eq$eq df-col arg)
+    (= op not=) (.$bang$eq$eq df-col arg)
+    (= op +) (.$plus df-col arg)
+    (= op -) (.$minus df-col arg)
+    (= op *) (.$times df-col arg)
+    (= op /) (.$div df-col arg)
     (= op >) (.$greater df-col arg)
     (= op >=) (.$greater$eq df-col arg)
     (= op <=) (.$less$eq df-col arg)
